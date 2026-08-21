@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pronostics Ligue 1 — journée 1</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e2e5ea;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --accent: #2563eb;
+    --accent-soft: #dbeafe;
+    --bar-bg: #eef0f4;
+    --bar-fill: #93c5fd;
+    --bar-fill-strong: #2563eb;
+    --pick1: #16a34a;
+    --pick-n: #ca8a04;
+    --pick2: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --surface: #171a21;
+      --border: #2a2e37;
+      --text: #e7e9ee;
+      --text-muted: #9aa1ac;
+      --accent: #60a5fa;
+      --accent-soft: #1e3a5f;
+      --bar-bg: #232730;
+      --bar-fill: #3b5a8a;
+      --bar-fill-strong: #60a5fa;
+      --pick1: #4ade80;
+      --pick-n: #fbbf24;
+      --pick2: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+  header {
+    margin-bottom: 24px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+  .note {
+    background: var(--accent-soft);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    margin: 16px 0 0;
+  }
+  .empty {
+    color: var(--text-muted);
+    padding: 40px 0;
+    text-align: center;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-top: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 720px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+  }
+  .teams .home { font-weight: 600; }
+  .teams .vs { color: var(--text-muted); }
+  .teams .away { font-weight: 600; }
+  .prob-cell { min-width: 90px; }
+  .bar {
+    position: relative;
+    background: var(--bar-bg);
+    border-radius: 6px;
+    height: 22px;
+    overflow: hidden;
+  }
+  .bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: var(--pct);
+    background: var(--bar-fill-strong);
+    opacity: 0.85;
+  }
+  .bar span {
+    position: relative;
+    z-index: 1;
+    display: block;
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .pick {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .pick-1 { background: var(--pick1); }
+  .pick-N { background: var(--pick-n); }
+  .pick-2 { background: var(--pick2); }
+  .score { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .muted { color: var(--text-muted); font-size: 0.85rem; }
+  footer {
+    margin-top: 24px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Pronostics Ligue 1 — journée 1</h1>
+    <p class="subtitle">Généré le 2026-08-21 18:57 UTC — modèle de base</p>
+    
+  </header>
+
+  
+  <div class="table-wrap" >
+    <table>
+      <thead>
+        <tr>
+          <th>Match</th>
+          <th>1</th>
+          <th>N</th>
+          <th>2</th>
+          <th>Pronostic</th>
+          <th>Score probable</th>
+          <th>Forme dom.</th>
+          <th>Forme ext.</th>
+          <th>H2H</th>
+        </tr>
+      </thead>
+      <tbody>
+    <tr>
+      <td class="teams"><span class="home">Racing Club de Lens</span> <span class="vs">–</span> <span class="away">AJ Auxerre</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:72%" title="Victoire domicile"><span>72%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:19%" title="Match nul"><span>19%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:9%" title="Victoire extérieur"><span>9%</span></div></td>
+      <td><span class="pick pick-1">Domicile</span></td>
+      <td class="score">2-0</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">Le Mans FC</span> <span class="vs">–</span> <span class="away">Stade Brestois 29</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:61%" title="Victoire domicile"><span>61%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:22%" title="Match nul"><span>22%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:17%" title="Victoire extérieur"><span>17%</span></div></td>
+      <td><span class="pick pick-1">Domicile</span></td>
+      <td class="score">1-0</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">ES Troyes AC</span> <span class="vs">–</span> <span class="away">Paris FC</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:42%" title="Victoire domicile"><span>42%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:27%" title="Match nul"><span>27%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:31%" title="Victoire extérieur"><span>31%</span></div></td>
+      <td><span class="pick pick-1">Domicile</span></td>
+      <td class="score">1-1</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">OGC Nice</span> <span class="vs">–</span> <span class="away">FC Lorient</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:31%" title="Victoire domicile"><span>31%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:28%" title="Match nul"><span>28%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:41%" title="Victoire extérieur"><span>41%</span></div></td>
+      <td><span class="pick pick-2">Extérieur</span></td>
+      <td class="score">1-1</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">Toulouse FC</span> <span class="vs">–</span> <span class="away">Olympique Lyonnais</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:30%" title="Victoire domicile"><span>30%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:25%" title="Match nul"><span>25%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:45%" title="Victoire extérieur"><span>45%</span></div></td>
+      <td><span class="pick pick-2">Extérieur</span></td>
+      <td class="score">1-1</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">Angers SCO</span> <span class="vs">–</span> <span class="away">Lille OSC</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:19%" title="Victoire domicile"><span>19%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:25%" title="Match nul"><span>25%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:56%" title="Victoire extérieur"><span>56%</span></div></td>
+      <td><span class="pick pick-2">Extérieur</span></td>
+      <td class="score">0-1</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">Le Havre AC</span> <span class="vs">–</span> <span class="away">AS Monaco FC</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:37%" title="Victoire domicile"><span>37%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:26%" title="Match nul"><span>26%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:37%" title="Victoire extérieur"><span>37%</span></div></td>
+      <td><span class="pick pick-2">Extérieur</span></td>
+      <td class="score">1-1</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+
+    <tr>
+      <td class="teams"><span class="home">Paris Saint-Germain FC</span> <span class="vs">–</span> <span class="away">Stade Rennais FC 1901</span></td>
+      <td class="prob-cell"><div class="bar" style="--pct:77%" title="Victoire domicile"><span>77%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:14%" title="Match nul"><span>14%</span></div></td>
+      <td class="prob-cell"><div class="bar" style="--pct:10%" title="Victoire extérieur"><span>10%</span></div></td>
+      <td><span class="pick pick-1">Domicile</span></td>
+      <td class="score">2-0</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+      <td class="muted">-</td>
+    </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    Généré automatiquement par
+    <a href="https://github.com/michonlilian-max/bot-ligue-1" target="_blank" rel="noopener">bot-ligue-1</a>.
+  </footer>
+</main>
+</body>
+</html>

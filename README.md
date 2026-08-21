@@ -123,6 +123,32 @@ Un appel API-Football est mis en cache localement (`.cache/`, 6h de
 durée de vie) pour ne pas gaspiller le quota gratuit lors de
 relances rapprochées.
 
+## Exécution automatique (GitHub Actions) et dashboard
+
+Le workflow `.github/workflows/predictions.yml` exécute le bot **tous
+les jours à 6h UTC** (et peut aussi être déclenché manuellement depuis
+l'onglet **Actions** du dépôt, bouton **"Run workflow"**). À chaque
+exécution, il génère et commite automatiquement :
+
+- `predictions/derniere-journee.md` : les pronostics en Markdown.
+- `docs/index.html` : un **dashboard HTML** auto-suffisant (barres de
+  probabilité, thème clair/sombre automatique), destiné à être publié
+  via **GitHub Pages**.
+
+### Mise en route (à faire une seule fois, sur GitHub)
+
+1. **Secrets du dépôt** (*Settings → Secrets and variables → Actions*) :
+   ajoutez `FOOTBALL_DATA_API_TOKEN` et `API_FOOTBALL_TOKEN` (optionnel).
+2. **Permissions d'écriture** (*Settings → Actions → General → Workflow
+   permissions*) : cochez **"Read and write permissions"**, pour que
+   l'Action puisse commiter ses résultats.
+3. **GitHub Pages** (*Settings → Pages*) : Source = **"Deploy from a
+   branch"**, Branch = **`main`**, dossier = **`/docs`** → **Save**. Le
+   dashboard sera alors disponible à une URL du type
+   `https://<votre-compte>.github.io/bot-ligue-1/` (indiquée en haut
+   de la page Pages une fois activée), mise à jour automatiquement à
+   chaque exécution de l'Action.
+
 ## Tests
 
 ```bash
@@ -137,16 +163,20 @@ accès réseau ni clé API.
 
 ```
 src/
-├── config.py             # configuration (jetons API, pondérations, constantes)
-├── data_fetcher.py       # client API football-data.org (calendrier, résultats)
-├── api_football_client.py # client API-Football (forme, cartons, H2H, effectifs)
-├── advanced_stats.py     # indice de force composite (forme/H2H/discipline/expérience)
-├── predictor.py           # modèle de prédiction (Poisson + ajustement de force)
-├── cache.py                # cache disque pour limiter les appels API-Football
-└── main.py                 # point d'entrée CLI
+├── config.py               # configuration (jetons API, pondérations, constantes)
+├── data_fetcher.py         # client API football-data.org (calendrier, résultats)
+├── api_football_client.py  # client API-Football (forme, cartons, H2H, effectifs)
+├── advanced_stats.py       # indice de force composite (forme/H2H/discipline/expérience)
+├── predictor.py             # modèle de prédiction (Poisson + ajustement de force + saison précédente)
+├── dashboard.py             # génération du dashboard HTML (docs/index.html)
+├── cache.py                  # cache disque pour limiter les appels API-Football
+└── main.py                   # point d'entrée CLI
+.github/workflows/
+└── predictions.yml         # exécution quotidienne automatique + publication du dashboard
 tests/
-├── test_predictor.py     # tests du modèle de prédiction
-└── test_advanced_stats.py # tests des statistiques avancées
+├── test_predictor.py       # tests du modèle de prédiction
+├── test_advanced_stats.py  # tests des statistiques avancées
+└── test_dashboard.py       # tests du dashboard HTML
 ```
 
 ## Limites connues
