@@ -36,19 +36,26 @@ class FootballDataClient:
             )
         return response.json()
 
-    def get_matches(self, status: str | None = None, matchday: int | None = None) -> list[dict[str, Any]]:
-        """Récupère les matchs de Ligue 1, éventuellement filtrés par statut/journée."""
+    def get_matches(
+        self,
+        status: str | None = None,
+        matchday: int | None = None,
+        season: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Récupère les matchs de Ligue 1, éventuellement filtrés par statut/journée/saison."""
         params: dict[str, Any] = {}
         if status:
             params["status"] = status
         if matchday:
             params["matchday"] = matchday
+        if season:
+            params["season"] = season
         data = self._get(f"/competitions/{config.COMPETITION_CODE}/matches", params=params)
         return data.get("matches", [])
 
-    def fetch_finished_matches(self) -> list[dict[str, Any]]:
-        """Récupère tous les matchs déjà joués de la saison en cours."""
-        return self.get_matches(status="FINISHED")
+    def fetch_finished_matches(self, season: int | None = None) -> list[dict[str, Any]]:
+        """Récupère tous les matchs déjà joués de la saison indiquée (par défaut la saison en cours)."""
+        return self.get_matches(status="FINISHED", season=season)
 
     def fetch_scheduled_matches(self, matchday: int | None = None) -> list[dict[str, Any]]:
         """Récupère les matchs programmés (à venir), éventuellement pour une journée précise."""

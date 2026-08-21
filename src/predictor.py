@@ -15,7 +15,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.config import MAX_GOALS
+from src.config import MAX_GOALS, PRIOR_SEASON_WEIGHT_MATCHES
 
 
 @dataclass
@@ -44,6 +44,24 @@ class TeamStats:
     @property
     def avg_away_conceded(self) -> float:
         return self.away_goals_conceded / self.away_matches if self.away_matches else 0.0
+
+
+@dataclass
+class BlendedTeamStats:
+    """Statistiques d'une équipe mélangeant saison en cours et saison précédente.
+
+    Produit par `blend_team_stats` : en tout début de saison, les moyennes
+    sont ramenées vers celles de la saison précédente (peu ou pas de matchs
+    joués cette saison-ci), puis l'effet s'estompe progressivement au fil des
+    journées. Expose les mêmes attributs que `TeamStats` (avg_home_scored,
+    etc.) pour rester utilisable de manière interchangeable dans
+    `expected_goals`.
+    """
+
+    avg_home_scored: float = 0.0
+    avg_home_conceded: float = 0.0
+    avg_away_scored: float = 0.0
+    avg_away_conceded: float = 0.0
 
 
 @dataclass
@@ -104,13 +122,99 @@ def build_team_stats(finished_matches: list[dict[str, Any]]) -> dict[str, TeamSt
     return stats
 
 
-def compute_league_averages(finished_matches: list[dict[str, Any]]) -> LeagueAverages:
-    """Calcule les moyennes de buts domicile/extérieur sur la ligue (utilisées en repli)."""
+def _shrink(current_avg: float, current_matches: int, prior_avg: float, prior_weight_matches: float) -> float:
+    """Ramène une moyenne courante vers une moyenne "a priori" (shrinkage bayésien simple).
+
+    `prior_weight_matches` est le nombre de matchs "virtuels" attribués à
+    l'a priori : avec peu de matchs courants, le résultat est proche de
+    `prior_avg` ; il se rapproche de `current_avg` au fur et à mesure que
+    `current_matches` augmente.
+    """
+    total_weight = current_matches + prior_weight_matches
+    if total_weight <= 0:
+        return 0.0
+    return (current_matches * current_avg + prior_weight_matches * prior_avg) / total_weight
+
+
+def blend_team_stats(
+    current_season_stats: dict[str, TeamStats],
+    previous_season_stats: dict[str, TeamStats],
+    prior_weight_matches: float = PRIOR_SEASON_WEIGHT_MATCHES,
+) -> dict[str, BlendedTeamStats]:
+    """Mélange les stats de la saison en cours avec celles de la saison précédente.
+
+    À n'utiliser que lorsque des données de la saison précédente sont
+    disponibles : mélanger avec un dictionnaire vide tirerait artificiellement
+    les moyennes vers zéro (voir `_shrink`). C'est à l'appelant de ne pas
+    appeler cette fonction en l'absence de données de saison précédente.
+    """
+    all_teams = set(current_season_stats) | set(previous_season_stats)
+    blended: dict[str, BlendedTeamStats] = {}
+
+    for team in all_teams:
+        current = current_season_stats.get(team, TeamStats())
+        previous = previous_season_stats.get(team, TeamStats())
+
+        blended[team] = BlendedTeamStats(
+            avg_home_scored=_shrink(
+                current.avg_home_scored, current.home_matches, previous.avg_home_scored, prior_weight_matches
+            ),
+            avg_home_conceded=_shrink(
+                current.avg_home_conceded, current.home_matches, previous.avg_home_conceded, prior_weight_matches
+            ),
+            avg_away_scored=_shrink(
+                current.avg_away_scored, current.away_matches, previous.avg_away_scored, prior_weight_matches
+            ),
+            avg_away_conceded=_shrink(
+                current.avg_away_conceded, current.away_matches, previous.avg_away_conceded, prior_weight_matches
+            ),
+        )
+
+    return blended
+
+
+def compute_league_averages(
+    finished_matches: list[dict[str, Any]],
+    previous_season_matches: list[dict[str, Any]] | None = None,
+    prior_weight_matches: float = PRIOR_SEASON_WEIGHT_MATCHES,
+) -> LeagueAverages:
+    """Calcule les moyennes de buts domicile/extérieur sur la ligue (utilisées en repli).
+
+    Si `previous_season_matches` est fourni, les moyennes de la saison en
+    cours sont mélangées (shrinkage) avec celles de la saison précédente,
+    pour rester fiables en tout début de saison courante.
+    """
+    current_home_total, current_away_total, current_count = _goal_totals(finished_matches)
+
+    if current_count == 0 and not previous_season_matches:
+        return LeagueAverages()
+
+    current_home_avg = current_home_total / current_count if current_count else 0.0
+    current_away_avg = current_away_total / current_count if current_count else 0.0
+
+    if not previous_season_matches:
+        return LeagueAverages(avg_home_goals=current_home_avg, avg_away_goals=current_away_avg)
+
+    previous_home_total, previous_away_total, previous_count = _goal_totals(previous_season_matches)
+    if previous_count == 0:
+        previous_home_avg, previous_away_avg = LeagueAverages().avg_home_goals, LeagueAverages().avg_away_goals
+    else:
+        previous_home_avg = previous_home_total / previous_count
+        previous_away_avg = previous_away_total / previous_count
+
+    return LeagueAverages(
+        avg_home_goals=_shrink(current_home_avg, current_count, previous_home_avg, prior_weight_matches),
+        avg_away_goals=_shrink(current_away_avg, current_count, previous_away_avg, prior_weight_matches),
+    )
+
+
+def _goal_totals(matches: list[dict[str, Any]]) -> tuple[int, int, int]:
+    """Retourne (total buts domicile, total buts extérieur, nombre de matchs comptés)."""
     total_home_goals = 0
     total_away_goals = 0
     count = 0
 
-    for match in finished_matches:
+    for match in matches:
         score = match.get("score", {}).get("fullTime", {})
         home_goals = score.get("home")
         away_goals = score.get("away")
@@ -120,19 +224,13 @@ def compute_league_averages(finished_matches: list[dict[str, Any]]) -> LeagueAve
         total_away_goals += away_goals
         count += 1
 
-    if count == 0:
-        return LeagueAverages()
-
-    return LeagueAverages(
-        avg_home_goals=total_home_goals / count,
-        avg_away_goals=total_away_goals / count,
-    )
+    return total_home_goals, total_away_goals, count
 
 
 def expected_goals(
     home_team: str,
     away_team: str,
-    stats: dict[str, TeamStats],
+    stats: dict[str, TeamStats | BlendedTeamStats],
     league_avg: LeagueAverages,
 ) -> tuple[float, float]:
     """Calcule le nombre de buts attendus (lambda) pour les deux équipes d'un match.
@@ -198,7 +296,7 @@ def score_probability_matrix(
 def predict_match(
     home_team: str,
     away_team: str,
-    stats: dict[str, TeamStats],
+    stats: dict[str, TeamStats | BlendedTeamStats],
     league_avg: LeagueAverages,
     strength_multipliers: tuple[float, float] | None = None,
 ) -> MatchPrediction:

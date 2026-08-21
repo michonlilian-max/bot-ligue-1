@@ -32,9 +32,10 @@ from src.advanced_stats import (
     parse_form_string,
     summarize_head_to_head,
 )
+from src import config
 from src.api_football_client import ApiFootballClient, ApiFootballError
 from src.data_fetcher import FootballDataClient, FootballDataError
-from src.predictor import build_team_stats, compute_league_averages, predict_match
+from src.predictor import blend_team_stats, build_team_stats, compute_league_averages, predict_match
 
 
 def build_advanced_context(
@@ -49,23 +50,26 @@ def build_advanced_context(
     if not client.is_configured:
         return None, {}
 
-    home_id = client.find_team_id(home_name)
-    away_id = client.find_team_id(away_name)
-    if home_id is None or away_id is None:
-        print(
-            f"Avertissement: équipe non trouvée sur API-Football ({home_name} / {away_name}), "
-            "statistiques avancées ignorées pour ce match.",
-            file=sys.stderr,
-        )
-        return None, {}
-
     try:
+        home_id = client.find_team_id(home_name)
+        away_id = client.find_team_id(away_name)
+        if home_id is None or away_id is None:
+            print(
+                f"Avertissement: équipe non trouvée sur API-Football ({home_name} / {away_name}), "
+                "statistiques avancées ignorées pour ce match.",
+                file=sys.stderr,
+            )
+            return None, {}
+
         home_stats_json = client.get_team_statistics(home_id)
         away_stats_json = client.get_team_statistics(away_id)
         h2h_fixtures = client.get_head_to_head(home_id, away_id, last=5)
         home_avg_age = client.get_squad_average_age(home_id)
         away_avg_age = client.get_squad_average_age(away_id)
     except ApiFootballError as exc:
+        # N'importe quel appel API-Football ci-dessus peut échouer (plan
+        # gratuit ne couvrant pas la saison en cours, quota dépassé, etc.) :
+        # on se rabat silencieusement sur le modèle de base pour ce match.
         print(f"Avertissement: statistiques avancées indisponibles ({exc})", file=sys.stderr)
         return None, {}
 
@@ -105,6 +109,20 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
     client = FootballDataClient()
     advanced_client = ApiFootballClient() if use_advanced else ApiFootballClient(api_key="")
 
+    if advanced_client.is_configured:
+        # Test unique en amont plutôt qu'un essai par match : évite de
+        # gaspiller le quota gratuit (100 req/jour) si les statistiques
+        # avancées sont indisponibles pour une raison durable (plan gratuit
+        # ne couvrant pas la saison en cours, quota déjà dépassé, etc.).
+        try:
+            advanced_client.find_team_id("_probe_")
+        except ApiFootballError as exc:
+            print(
+                f"Avertissement: statistiques avancées désactivées pour cette exécution ({exc})",
+                file=sys.stderr,
+            )
+            advanced_client = ApiFootballClient(api_key="")
+
     try:
         finished = client.fetch_finished_matches()
     except FootballDataError as exc:
@@ -114,19 +132,45 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
         print(f"Erreur: {exc}", file=sys.stderr)
         return 1
 
-    if not finished:
+    # En tout début de saison (peu ou pas de matchs joués), on complète avec
+    # le classement/les stats de la saison précédente (voir
+    # predictor.blend_team_stats). Erreur non bloquante : on continue avec la
+    # seule saison en cours si la saison précédente n'est pas disponible.
+    previous_season = config.current_season() - 1
+    try:
+        previous_finished = client.fetch_finished_matches(season=previous_season)
+    except FootballDataError as exc:
+        print(
+            f"Avertissement: saison précédente ({previous_season}) indisponible ({exc}), "
+            "poursuite avec la seule saison en cours.",
+            file=sys.stderr,
+        )
+        previous_finished = []
+
+    if not finished and not previous_finished:
         message = (
             f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n"
-            "Aucun match terminé trouvé pour la saison en cours : impossible de "
-            "calculer des statistiques fiables (probablement hors-saison).\n"
+            "Aucun match terminé trouvé, ni pour la saison en cours ni pour la saison "
+            "précédente : impossible de calculer des statistiques fiables.\n"
         )
         print(message, file=sys.stderr)
         if output:
             _write_output(output, message)
         return 0
 
-    stats = build_team_stats(finished)
-    league_avg = compute_league_averages(finished)
+    current_stats = build_team_stats(finished)
+    if previous_finished:
+        stats = blend_team_stats(current_stats, build_team_stats(previous_finished))
+        league_avg = compute_league_averages(finished, previous_season_matches=previous_finished)
+        if len(finished) < config.PRIOR_SEASON_WEIGHT_MATCHES * 2:
+            print(
+                f"Note: seulement {len(finished)} match(s) joué(s) cette saison — "
+                f"les stats de la saison {previous_season}-{previous_season + 1} sont utilisées en complément.",
+                file=sys.stderr,
+            )
+    else:
+        stats = current_stats
+        league_avg = compute_league_averages(finished)
 
     if matchday:
         upcoming = client.fetch_scheduled_matches(matchday=matchday)

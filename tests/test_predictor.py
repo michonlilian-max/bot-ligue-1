@@ -2,6 +2,8 @@
 import math
 
 from src.predictor import (
+    TeamStats,
+    blend_team_stats,
     build_team_stats,
     compute_league_averages,
     expected_goals,
@@ -95,6 +97,74 @@ def test_predict_match_applies_strength_multipliers():
     assert boosted_away.lambda_away > baseline.lambda_away
     assert boosted_away.lambda_home < baseline.lambda_home
     assert boosted_away.away_win_prob > baseline.away_win_prob
+
+
+# --- Prise en compte de la saison précédente ---
+
+PREVIOUS_SEASON_MATCHES = [
+    _match("PSG", "Nice", 2, 1),
+    _match("Nice", "PSG", 0, 3),
+    _match("Lyon", "Nice", 1, 1),
+    _match("Nice", "Lyon", 2, 0),
+]
+
+
+def test_blend_team_stats_uses_previous_season_when_no_current_matches():
+    # Aucun match cette saison : le mélange doit reproduire exactement la
+    # saison précédente (shrinkage total vers le prior).
+    current_stats: dict[str, TeamStats] = {}
+    previous_stats = build_team_stats(PREVIOUS_SEASON_MATCHES)
+
+    blended = blend_team_stats(current_stats, previous_stats, prior_weight_matches=6)
+
+    assert blended["PSG"].avg_home_scored == previous_stats["PSG"].avg_home_scored
+    assert blended["Nice"].avg_away_conceded == previous_stats["Nice"].avg_away_conceded
+
+
+def test_blend_team_stats_fades_toward_current_season_with_more_matches():
+    previous_stats = build_team_stats(PREVIOUS_SEASON_MATCHES)
+
+    # PSG a une seule victoire écrasante à domicile cette saison (moyenne très haute).
+    few_matches = build_team_stats([_match("PSG", "Lyon", 5, 0)])
+    blended_few = blend_team_stats(few_matches, previous_stats, prior_weight_matches=6)
+
+    # Avec beaucoup de matchs similaires cette saison, le poids du prior doit diminuer.
+    many_matches = build_team_stats(
+        [_match("PSG", "Lyon", 5, 0)] * 20  # 20 matchs à domicile identiques
+    )
+    blended_many = blend_team_stats(many_matches, previous_stats, prior_weight_matches=6)
+
+    # Le prior tire la moyenne "few" vers le bas (2 buts/match la saison passée) ;
+    # avec beaucoup de matchs cette saison, la moyenne doit s'en rapprocher de 5.
+    assert blended_few.get("PSG").avg_home_scored < blended_many.get("PSG").avg_home_scored
+    assert blended_many.get("PSG").avg_home_scored > 4.0
+
+
+def test_compute_league_averages_falls_back_to_previous_season_defaults_when_both_empty():
+    league_avg = compute_league_averages([], previous_season_matches=[])
+    assert league_avg.avg_home_goals == 1.5
+    assert league_avg.avg_away_goals == 1.2
+
+
+def test_compute_league_averages_blends_previous_season_when_current_is_empty():
+    league_avg = compute_league_averages([], previous_season_matches=PREVIOUS_SEASON_MATCHES)
+    # Avec 0 match cette saison, la moyenne doit être exactement celle de la
+    # saison précédente (shrinkage total vers le prior).
+    _, _, prev_count = (
+        sum(m["score"]["fullTime"]["home"] for m in PREVIOUS_SEASON_MATCHES),
+        sum(m["score"]["fullTime"]["away"] for m in PREVIOUS_SEASON_MATCHES),
+        len(PREVIOUS_SEASON_MATCHES),
+    )
+    expected_home_avg = sum(m["score"]["fullTime"]["home"] for m in PREVIOUS_SEASON_MATCHES) / prev_count
+    assert math.isclose(league_avg.avg_home_goals, expected_home_avg)
+
+
+def test_compute_league_averages_without_previous_season_matches_current_only_behavior():
+    # Sans saison précédente fournie, le comportement doit être identique à avant
+    # (moyenne calculée uniquement sur la saison en cours).
+    baseline = compute_league_averages(FINISHED_MATCHES)
+    with_none = compute_league_averages(FINISHED_MATCHES, previous_season_matches=None)
+    assert baseline == with_none
 
 
 def test_predict_match_probabilities_still_sum_to_one_with_multipliers():

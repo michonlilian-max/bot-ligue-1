@@ -66,3 +66,16 @@ EXPERIENCE_WEIGHT = 0.20    # âge moyen de l'effectif (proxy d'expérience)
 
 # Ajustement maximal appliqué aux buts attendus (lambda) : +/- 25%
 MAX_STRENGTH_ADJUSTMENT = 0.25
+
+
+# --- Prise en compte de la saison précédente ---
+# En tout début de saison (peu ou pas de matchs joués), les moyennes de buts
+# de la saison en cours sont mélangées à celles de la saison précédente (voir
+# predictor.blend_team_stats et predictor.compute_league_averages), pour
+# éviter des prédictions non fiables basées sur un échantillon trop petit.
+#
+# PRIOR_SEASON_WEIGHT_MATCHES fixe le nombre de matchs "virtuels" de la
+# saison précédente injectés dans la moyenne de chaque équipe : plus il est
+# grand, plus il faut de matchs joués cette saison pour que l'effet de la
+# saison précédente s'estompe complètement.
+PRIOR_SEASON_WEIGHT_MATCHES = 6
