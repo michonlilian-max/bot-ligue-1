@@ -26,6 +26,16 @@ class MatchRow:
     h2h: str
 
 
+@dataclass
+class OtherMatchRow:
+    """Un match de la même journée déjà commencé ou terminé (pas de pronostic)."""
+
+    home: str
+    away: str
+    status_label: str  # ex: "En cours", "Terminé", "Reporté"
+    score: str  # ex: "1-0" ou "-" si pas encore de score
+
+
 _PICK_LABELS = {"1": "Domicile", "N": "Nul", "2": "Extérieur"}
 
 
@@ -41,8 +51,16 @@ def _prob_bar(label: str, prob: float) -> str:
     )
 
 
-def _row_html(row: MatchRow) -> str:
+def _row_html(row: MatchRow, show_advanced: bool) -> str:
     pick_label = _PICK_LABELS.get(row.pick, row.pick)
+    advanced_cells = (
+        f"""
+      <td class="muted">{_esc(row.form_home)}</td>
+      <td class="muted">{_esc(row.form_away)}</td>
+      <td class="muted">{_esc(row.h2h)}</td>"""
+        if show_advanced
+        else ""
+    )
     return f"""
     <tr>
       <td class="teams"><span class="home">{_esc(row.home)}</span> <span class="vs">–</span> <span class="away">{_esc(row.away)}</span></td>
@@ -50,10 +68,16 @@ def _row_html(row: MatchRow) -> str:
       <td class="prob-cell">{_prob_bar("Match nul", row.draw_prob)}</td>
       <td class="prob-cell">{_prob_bar("Victoire extérieur", row.away_win_prob)}</td>
       <td><span class="pick pick-{_esc(row.pick)}">{_esc(pick_label)}</span></td>
-      <td class="score">{_esc(row.predicted_score)}</td>
-      <td class="muted">{_esc(row.form_home)}</td>
-      <td class="muted">{_esc(row.form_away)}</td>
-      <td class="muted">{_esc(row.h2h)}</td>
+      <td class="score">{_esc(row.predicted_score)}</td>{advanced_cells}
+    </tr>"""
+
+
+def _other_match_row_html(row: OtherMatchRow) -> str:
+    return f"""
+    <tr>
+      <td class="teams"><span class="home">{_esc(row.home)}</span> <span class="vs">–</span> <span class="away">{_esc(row.away)}</span></td>
+      <td class="muted">{_esc(row.status_label)}</td>
+      <td class="score">{_esc(row.score)}</td>
     </tr>"""
 
 
@@ -62,9 +86,18 @@ def render_dashboard(
     subtitle: str,
     rows: list[MatchRow],
     note: str | None = None,
+    show_advanced: bool = True,
+    other_matches: list[OtherMatchRow] | None = None,
 ) -> str:
-    """Construit la page HTML complète du dashboard."""
-    rows_html = "\n".join(_row_html(row) for row in rows) if rows else ""
+    """Construit la page HTML complète du dashboard.
+
+    `show_advanced` contrôle l'affichage des colonnes Forme/H2H : à mettre à
+    False quand les statistiques avancées n'ont pas pu être calculées pour
+    cette exécution (plutôt que d'afficher des colonnes remplies de "-").
+    `other_matches` liste les matchs de la même journée déjà commencés ou
+    terminés (le bot ne pronostique que les matchs pas encore commencés).
+    """
+    rows_html = "\n".join(_row_html(row, show_advanced) for row in rows) if rows else ""
     empty_state = (
         ""
         if rows
@@ -72,6 +105,30 @@ def render_dashboard(
         "Revenez après la prochaine exécution automatique.</p>"
     )
     note_html = f'<p class="note">{_esc(note)}</p>' if note else ""
+    advanced_headers = (
+        "<th>Forme dom.</th>\n          <th>Forme ext.</th>\n          <th>H2H</th>" if show_advanced else ""
+    )
+
+    other_matches_html = ""
+    if other_matches:
+        other_rows_html = "\n".join(_other_match_row_html(row) for row in other_matches)
+        other_matches_html = f"""
+  <h2>Autres matchs de la journée</h2>
+  <p class="subtitle">Déjà commencés ou terminés : pas de pronostic (voir ci-dessus pour les matchs à venir).</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Match</th>
+          <th>Statut</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>{other_rows_html}
+      </tbody>
+    </table>
+  </div>
+"""
 
     return f"""<!doctype html>
 <html lang="fr">
@@ -131,6 +188,10 @@ def render_dashboard(
   h1 {{
     font-size: 1.6rem;
     margin: 0 0 4px;
+  }}
+  h2 {{
+    font-size: 1.1rem;
+    margin: 32px 0 4px;
   }}
   .subtitle {{
     color: var(--text-muted);
@@ -249,16 +310,14 @@ def render_dashboard(
           <th>2</th>
           <th>Pronostic</th>
           <th>Score probable</th>
-          <th>Forme dom.</th>
-          <th>Forme ext.</th>
-          <th>H2H</th>
+          {advanced_headers}
         </tr>
       </thead>
       <tbody>{rows_html}
       </tbody>
     </table>
   </div>
-
+  {other_matches_html}
   <footer>
     Généré automatiquement par
     <a href="https://github.com/michonlilian-max/bot-ligue-1" target="_blank" rel="noopener">bot-ligue-1</a>.

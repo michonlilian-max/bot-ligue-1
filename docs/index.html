@@ -57,6 +57,10 @@
     font-size: 1.6rem;
     margin: 0 0 4px;
   }
+  h2 {
+    font-size: 1.1rem;
+    margin: 32px 0 4px;
+  }
   .subtitle {
     color: var(--text-muted);
     font-size: 0.95rem;
@@ -159,8 +163,8 @@
 <main>
   <header>
     <h1>Pronostics Ligue 1 — journée 1</h1>
-    <p class="subtitle">Généré le 2026-08-21 18:57 UTC — modèle de base</p>
-    
+    <p class="subtitle">Généré le 2026-08-21 19:04 UTC — modèle de base</p>
+    <p class="note">Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution — Erreur API-Football sur https://v3.football.api-sports.io/teams: {&#x27;plan&#x27;: &#x27;Free plans do not have access to this season, try from 2022 to 2024.&#x27;}. Le pronostic repose sur le modèle de base (buts marqués/encaissés).</p>
   </header>
 
   
@@ -174,9 +178,7 @@
           <th>2</th>
           <th>Pronostic</th>
           <th>Score probable</th>
-          <th>Forme dom.</th>
-          <th>Forme ext.</th>
-          <th>H2H</th>
+          
         </tr>
       </thead>
       <tbody>
@@ -187,9 +189,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:9%" title="Victoire extérieur"><span>9%</span></div></td>
       <td><span class="pick pick-1">Domicile</span></td>
       <td class="score">2-0</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -199,9 +198,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:17%" title="Victoire extérieur"><span>17%</span></div></td>
       <td><span class="pick pick-1">Domicile</span></td>
       <td class="score">1-0</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -211,9 +207,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:31%" title="Victoire extérieur"><span>31%</span></div></td>
       <td><span class="pick pick-1">Domicile</span></td>
       <td class="score">1-1</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -223,9 +216,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:41%" title="Victoire extérieur"><span>41%</span></div></td>
       <td><span class="pick pick-2">Extérieur</span></td>
       <td class="score">1-1</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -235,9 +225,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:45%" title="Victoire extérieur"><span>45%</span></div></td>
       <td><span class="pick pick-2">Extérieur</span></td>
       <td class="score">1-1</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -247,9 +234,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:56%" title="Victoire extérieur"><span>56%</span></div></td>
       <td><span class="pick pick-2">Extérieur</span></td>
       <td class="score">0-1</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -259,9 +243,6 @@
       <td class="prob-cell"><div class="bar" style="--pct:37%" title="Victoire extérieur"><span>37%</span></div></td>
       <td><span class="pick pick-2">Extérieur</span></td>
       <td class="score">1-1</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
     </tr>
 
     <tr>
@@ -271,9 +252,27 @@
       <td class="prob-cell"><div class="bar" style="--pct:10%" title="Victoire extérieur"><span>10%</span></div></td>
       <td><span class="pick pick-1">Domicile</span></td>
       <td class="score">2-0</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
-      <td class="muted">-</td>
+    </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <h2>Autres matchs de la journée</h2>
+  <p class="subtitle">Déjà commencés ou terminés : pas de pronostic (voir ci-dessus pour les matchs à venir).</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Match</th>
+          <th>Statut</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+    <tr>
+      <td class="teams"><span class="home">Olympique de Marseille</span> <span class="vs">–</span> <span class="away">RC Strasbourg Alsace</span></td>
+      <td class="muted">En cours</td>
+      <td class="score">0-0</td>
     </tr>
       </tbody>
     </table>

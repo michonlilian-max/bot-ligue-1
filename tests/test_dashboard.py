@@ -1,5 +1,5 @@
 """Tests du dashboard HTML (données synthétiques, pas d'appel réseau)."""
-from src.dashboard import MatchRow, render_dashboard
+from src.dashboard import MatchRow, OtherMatchRow, render_dashboard
 
 
 def test_render_dashboard_includes_match_data():
@@ -60,3 +60,64 @@ def test_render_dashboard_empty_state_shows_note():
 def test_render_dashboard_without_note_omits_note_block():
     html = render_dashboard("Titre", "Sous-titre", [])
     assert 'class="note"' not in html
+
+
+def test_render_dashboard_hides_advanced_columns_when_unavailable():
+    rows = [
+        MatchRow(
+            home="PSG",
+            away="Nice",
+            home_win_prob=0.6,
+            draw_prob=0.25,
+            away_win_prob=0.15,
+            pick="1",
+            predicted_score="2-0",
+            form_home="-",
+            form_away="-",
+            h2h="-",
+        )
+    ]
+
+    html = render_dashboard("Titre", "Sous-titre", rows, show_advanced=False)
+
+    assert "Forme dom." not in html
+    assert "Forme ext." not in html
+    assert "<th>H2H</th>" not in html
+
+
+def test_render_dashboard_shows_advanced_columns_by_default():
+    rows = [
+        MatchRow(
+            home="PSG",
+            away="Nice",
+            home_win_prob=0.6,
+            draw_prob=0.25,
+            away_win_prob=0.15,
+            pick="1",
+            predicted_score="2-0",
+            form_home="13/15",
+            form_away="6/15",
+            h2h="3V 1N 1D",
+        )
+    ]
+
+    html = render_dashboard("Titre", "Sous-titre", rows)
+
+    assert "Forme dom." in html
+    assert "13/15" in html
+
+
+def test_render_dashboard_includes_other_matches_section():
+    other = [OtherMatchRow(home="Marseille", away="Strasbourg", status_label="En cours", score="0-0")]
+
+    html = render_dashboard("Titre", "Sous-titre", [], other_matches=other)
+
+    assert "Autres matchs de la journée" in html
+    assert "Marseille" in html
+    assert "En cours" in html
+    assert "0-0" in html
+
+
+def test_render_dashboard_omits_other_matches_section_when_none():
+    html = render_dashboard("Titre", "Sous-titre", [])
+    assert "Autres matchs de la journée" not in html
