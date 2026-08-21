@@ -1,20 +1,27 @@
 """Point d'entrée CLI du bot de prédiction Ligue 1.
 
 Usage:
-    python -m src.main                 # prédit la prochaine journée
-    python -m src.main --matchday 5    # prédit une journée précise
-    python -m src.main --no-advanced   # ignore les statistiques avancées (API-Football)
+    python -m src.main                              # prédit la prochaine journée
+    python -m src.main --matchday 5                 # prédit une journée précise
+    python -m src.main --no-advanced                # ignore les statistiques avancées (API-Football)
+    python -m src.main --output predictions/x.md     # écrit aussi le résultat dans un fichier Markdown
 
 Le modèle de base (buts marqués/encaissés, domicile/extérieur) ne nécessite
 que la clé football-data.org. Si une clé API-Football (API_FOOTBALL_TOKEN)
 est également configurée, le pronostic est affiné avec la forme récente, les
 confrontations directes, la discipline (cartons) et l'expérience de
 l'effectif (voir src/advanced_stats.py).
+
+`--output` sert notamment à l'exécution automatisée via GitHub Actions (voir
+.github/workflows/predictions.yml) : le fichier généré est commité dans le
+dépôt à chaque exécution.
 """
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 from tabulate import tabulate
 
@@ -84,23 +91,39 @@ def build_advanced_context(
     return multipliers, info
 
 
-def run(matchday: int | None = None, use_advanced: bool = True) -> int:
+def _write_output(path: str, content: str) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(content, encoding="utf-8")
+
+
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def run(matchday: int | None = None, use_advanced: bool = True, output: str | None = None) -> int:
     client = FootballDataClient()
     advanced_client = ApiFootballClient() if use_advanced else ApiFootballClient(api_key="")
 
     try:
         finished = client.fetch_finished_matches()
     except FootballDataError as exc:
+        # Erreur bloquante (jeton invalide, API indisponible, etc.) : on ne
+        # génère pas de fichier de sortie et on remonte un code d'erreur, pour
+        # que l'exécution automatisée (GitHub Actions) apparaisse en échec.
         print(f"Erreur: {exc}", file=sys.stderr)
         return 1
 
     if not finished:
-        print(
-            "Aucun match terminé trouvé pour la saison en cours : "
-            "impossible de calculer des statistiques fiables.",
-            file=sys.stderr,
+        message = (
+            f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n"
+            "Aucun match terminé trouvé pour la saison en cours : impossible de "
+            "calculer des statistiques fiables (probablement hors-saison).\n"
         )
-        return 1
+        print(message, file=sys.stderr)
+        if output:
+            _write_output(output, message)
+        return 0
 
     stats = build_team_stats(finished)
     league_avg = compute_league_averages(finished)
@@ -112,15 +135,23 @@ def run(matchday: int | None = None, use_advanced: bool = True) -> int:
         target_matchday, upcoming = client.fetch_next_matchday()
 
     if not upcoming:
-        print("Aucun match à venir trouvé.", file=sys.stderr)
-        return 1
+        message = (
+            f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n"
+            "Aucun match à venir trouvé (probablement hors-saison ou entre deux journées).\n"
+        )
+        print(message, file=sys.stderr)
+        if output:
+            _write_output(output, message)
+        return 0
 
+    mode = "modèle avancé" if advanced_client.is_configured else "modèle de base"
+    title = f"Pronostics Ligue 1 — journée {target_matchday}"
     if advanced_client.is_configured:
-        print(f"\nPrédictions Ligue 1 — journée {target_matchday} (modèle avancé)\n")
+        print(f"\n{title} ({mode})\n")
     else:
         print(
-            f"\nPrédictions Ligue 1 — journée {target_matchday} (modèle de base : "
-            "définissez API_FOOTBALL_TOKEN pour activer forme/H2H/discipline/expérience)\n"
+            f"\n{title} ({mode} : définissez API_FOOTBALL_TOKEN pour activer "
+            "forme/H2H/discipline/expérience)\n"
         )
 
     rows = []
@@ -159,7 +190,13 @@ def run(matchday: int | None = None, use_advanced: bool = True) -> int:
         "Forme ext.",
         "H2H (dom. perspective)",
     ]
-    print(tabulate(rows, headers=headers, tablefmt="github"))
+    table = tabulate(rows, headers=headers, tablefmt="github")
+    print(table)
+
+    if output:
+        markdown = f"# {title}\n\n_Généré le {_timestamp()} ({mode})._\n\n{table}\n"
+        _write_output(output, markdown)
+
     return 0
 
 
@@ -176,8 +213,14 @@ def main() -> None:
         action="store_true",
         help="Désactive les statistiques avancées (API-Football), même si une clé est configurée",
     )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Écrit également le résultat dans ce fichier Markdown (ex: predictions/derniere-journee.md)",
+    )
     args = parser.parse_args()
-    sys.exit(run(matchday=args.matchday, use_advanced=not args.no_advanced))
+    sys.exit(run(matchday=args.matchday, use_advanced=not args.no_advanced, output=args.output))
 
 
 if __name__ == "__main__":
