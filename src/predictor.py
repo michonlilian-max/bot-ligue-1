@@ -200,9 +200,23 @@ def predict_match(
     away_team: str,
     stats: dict[str, TeamStats],
     league_avg: LeagueAverages,
+    strength_multipliers: tuple[float, float] | None = None,
 ) -> MatchPrediction:
-    """Prédit le résultat (1N2) et le score le plus probable d'un match."""
+    """Prédit le résultat (1N2) et le score le plus probable d'un match.
+
+    `strength_multipliers`, si fourni, est un couple (multiplicateur_domicile,
+    multiplicateur_extérieur) appliqué aux buts attendus (lambda) du modèle de
+    base. Il vient typiquement de
+    `advanced_stats.compute_strength_multipliers`, qui combine forme récente,
+    confrontations directes, discipline et expérience de l'effectif.
+    """
     lambda_home, lambda_away = expected_goals(home_team, away_team, stats, league_avg)
+
+    if strength_multipliers is not None:
+        home_multiplier, away_multiplier = strength_multipliers
+        lambda_home = max(lambda_home * home_multiplier, 0.05)
+        lambda_away = max(lambda_away * away_multiplier, 0.05)
+
     matrix = score_probability_matrix(lambda_home, lambda_away)
 
     home_win_prob = sum(p for (h, a), p in matrix.items() if h > a)

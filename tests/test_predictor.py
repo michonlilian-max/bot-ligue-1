@@ -82,3 +82,26 @@ def test_predict_match_favors_stronger_team():
     prediction = predict_match("PSG", "Nice", stats, league_avg)
 
     assert prediction.home_win_prob > prediction.away_win_prob
+
+
+def test_predict_match_applies_strength_multipliers():
+    stats = build_team_stats(FINISHED_MATCHES)
+    league_avg = compute_league_averages(FINISHED_MATCHES)
+
+    baseline = predict_match("PSG", "Nice", stats, league_avg)
+    # On simule Nice en très grande forme (H2H/forme dominante) face à un PSG affaibli.
+    boosted_away = predict_match("PSG", "Nice", stats, league_avg, strength_multipliers=(0.75, 1.25))
+
+    assert boosted_away.lambda_away > baseline.lambda_away
+    assert boosted_away.lambda_home < baseline.lambda_home
+    assert boosted_away.away_win_prob > baseline.away_win_prob
+
+
+def test_predict_match_probabilities_still_sum_to_one_with_multipliers():
+    stats = build_team_stats(FINISHED_MATCHES)
+    league_avg = compute_league_averages(FINISHED_MATCHES)
+
+    prediction = predict_match("PSG", "Nice", stats, league_avg, strength_multipliers=(1.25, 0.75))
+
+    total_prob = prediction.home_win_prob + prediction.draw_prob + prediction.away_win_prob
+    assert math.isclose(total_prob, 1.0, abs_tol=1e-6)
