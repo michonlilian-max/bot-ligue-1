@@ -5,6 +5,7 @@ Usage:
     python -m src.main --matchday 5                 # prédit une journée précise
     python -m src.main --no-advanced                # ignore les statistiques avancées (API-Football)
     python -m src.main --output predictions/x.md     # écrit aussi le résultat dans un fichier Markdown
+    python -m src.main --html-output docs/index.html # écrit un dashboard HTML (ex: pour GitHub Pages)
 
 Le modèle de base (buts marqués/encaissés, domicile/extérieur) ne nécessite
 que la clé football-data.org. Si une clé API-Football (API_FOOTBALL_TOKEN)
@@ -12,9 +13,9 @@ est également configurée, le pronostic est affiné avec la forme récente, les
 confrontations directes, la discipline (cartons) et l'expérience de
 l'effectif (voir src/advanced_stats.py).
 
-`--output` sert notamment à l'exécution automatisée via GitHub Actions (voir
-.github/workflows/predictions.yml) : le fichier généré est commité dans le
-dépôt à chaque exécution.
+`--output`/`--html-output` servent notamment à l'exécution automatisée via
+GitHub Actions (voir .github/workflows/predictions.yml) : les fichiers
+générés sont commités dans le dépôt à chaque exécution.
 """
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ from src.advanced_stats import (
 )
 from src import config
 from src.api_football_client import ApiFootballClient, ApiFootballError
+from src.dashboard import MatchRow, render_dashboard
 from src.data_fetcher import FootballDataClient, FootballDataError
 from src.predictor import blend_team_stats, build_team_stats, compute_league_averages, predict_match
 
@@ -105,7 +107,12 @@ def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
-def run(matchday: int | None = None, use_advanced: bool = True, output: str | None = None) -> int:
+def run(
+    matchday: int | None = None,
+    use_advanced: bool = True,
+    output: str | None = None,
+    html_output: str | None = None,
+) -> int:
     client = FootballDataClient()
     advanced_client = ApiFootballClient() if use_advanced else ApiFootballClient(api_key="")
 
@@ -148,14 +155,18 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
         previous_finished = []
 
     if not finished and not previous_finished:
-        message = (
-            f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n"
+        note = (
             "Aucun match terminé trouvé, ni pour la saison en cours ni pour la saison "
-            "précédente : impossible de calculer des statistiques fiables.\n"
+            "précédente : impossible de calculer des statistiques fiables."
         )
-        print(message, file=sys.stderr)
+        print(note, file=sys.stderr)
         if output:
-            _write_output(output, message)
+            _write_output(output, f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n{note}\n")
+        if html_output:
+            _write_output(
+                html_output,
+                render_dashboard("Pronostics Ligue 1", f"Généré le {_timestamp()}", [], note=note),
+            )
         return 0
 
     current_stats = build_team_stats(finished)
@@ -179,13 +190,15 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
         target_matchday, upcoming = client.fetch_next_matchday()
 
     if not upcoming:
-        message = (
-            f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n"
-            "Aucun match à venir trouvé (probablement hors-saison ou entre deux journées).\n"
-        )
-        print(message, file=sys.stderr)
+        note = "Aucun match à venir trouvé (probablement hors-saison ou entre deux journées)."
+        print(note, file=sys.stderr)
         if output:
-            _write_output(output, message)
+            _write_output(output, f"# Pronostics Ligue 1\n\n_Généré le {_timestamp()}._\n\n{note}\n")
+        if html_output:
+            _write_output(
+                html_output,
+                render_dashboard("Pronostics Ligue 1", f"Généré le {_timestamp()}", [], note=note),
+            )
         return 0
 
     mode = "modèle avancé" if advanced_client.is_configured else "modèle de base"
@@ -199,6 +212,7 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
         )
 
     rows = []
+    match_rows: list[MatchRow] = []
     for match in upcoming:
         home = match["homeTeam"]["name"]
         away = match["awayTeam"]["name"]
@@ -207,6 +221,11 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
         prediction = predict_match(home, away, stats, league_avg, strength_multipliers=multipliers)
 
         score_h, score_a = prediction.predicted_score
+        predicted_score = f"{score_h}-{score_a}"
+        form_home = info.get("forme_dom", "-")
+        form_away = info.get("forme_ext", "-")
+        h2h = info.get("h2h", "-")
+
         rows.append(
             [
                 home,
@@ -215,11 +234,25 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
                 f"{prediction.draw_prob:.0%}",
                 f"{prediction.away_win_prob:.0%}",
                 prediction.most_likely_result,
-                f"{score_h}-{score_a}",
-                info.get("forme_dom", "-"),
-                info.get("forme_ext", "-"),
-                info.get("h2h", "-"),
+                predicted_score,
+                form_home,
+                form_away,
+                h2h,
             ]
+        )
+        match_rows.append(
+            MatchRow(
+                home=home,
+                away=away,
+                home_win_prob=prediction.home_win_prob,
+                draw_prob=prediction.draw_prob,
+                away_win_prob=prediction.away_win_prob,
+                pick=prediction.most_likely_result,
+                predicted_score=predicted_score,
+                form_home=form_home,
+                form_away=form_away,
+                h2h=h2h,
+            )
         )
 
     headers = [
@@ -240,6 +273,10 @@ def run(matchday: int | None = None, use_advanced: bool = True, output: str | No
     if output:
         markdown = f"# {title}\n\n_Généré le {_timestamp()} ({mode})._\n\n{table}\n"
         _write_output(output, markdown)
+
+    if html_output:
+        dashboard_html = render_dashboard(title, f"Généré le {_timestamp()} — {mode}", match_rows)
+        _write_output(html_output, dashboard_html)
 
     return 0
 
@@ -263,8 +300,21 @@ def main() -> None:
         default=None,
         help="Écrit également le résultat dans ce fichier Markdown (ex: predictions/derniere-journee.md)",
     )
+    parser.add_argument(
+        "--html-output",
+        type=str,
+        default=None,
+        help="Écrit un dashboard HTML auto-suffisant dans ce fichier (ex: docs/index.html, pour GitHub Pages)",
+    )
     args = parser.parse_args()
-    sys.exit(run(matchday=args.matchday, use_advanced=not args.no_advanced, output=args.output))
+    sys.exit(
+        run(
+            matchday=args.matchday,
+            use_advanced=not args.no_advanced,
+            output=args.output,
+            html_output=args.html_output,
+        )
+    )
 
 
 if __name__ == "__main__":
