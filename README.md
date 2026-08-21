@@ -45,6 +45,29 @@ les deux équipes, qui module ensuite les buts attendus de chaque
 Sans clé API-Football, le bot fonctionne quand même, avec le modèle de
 base uniquement (colonnes forme/H2H affichées à `-`).
 
+⚠️ Le plan gratuit d'API-Football ne couvre pour l'instant que les
+saisons 2021 à 2024 (message d'erreur `"Free plans do not have access
+to this season"` sinon). Le bot détecte ce cas automatiquement en
+amont et désactive proprement les statistiques avancées pour
+l'exécution (une seule vérification, pas un essai par match, pour ne
+pas gaspiller le quota).
+
+### 3. Saison précédente en complément (tout début de saison)
+
+En tout début de saison (peu ou pas de matchs encore joués cette
+saison-ci), les moyennes de buts sont mélangées avec celles de la
+saison précédente via un shrinkage bayésien simple
+(`predictor.blend_team_stats` / `predictor.compute_league_averages`) :
+plus une équipe a joué de matchs cette saison, moins son historique de
+la saison passée pèse dans la moyenne. `PRIOR_SEASON_WEIGHT_MATCHES`
+(dans `src/config.py`) fixe le nombre de matchs "virtuels" de la
+saison précédente injectés — augmentez-le pour que l'effet dure plus
+longtemps, diminuez-le pour qu'il s'estompe plus vite.
+
+Si les données de la saison précédente ne sont pas disponibles (erreur
+API, saison sans historique), le bot continue avec la seule saison en
+cours, sans planter.
+
 ### Facteurs volontairement non inclus
 
 **Masse salariale et prix d'achat des joueurs** ne sont pas intégrés :
