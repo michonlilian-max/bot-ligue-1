@@ -35,7 +35,7 @@ from src.advanced_stats import (
 )
 from src import config
 from src.api_football_client import ApiFootballClient, ApiFootballError
-from src.dashboard import MatchRow, render_dashboard
+from src.dashboard import MatchRow, OtherMatchRow, render_dashboard
 from src.data_fetcher import FootballDataClient, FootballDataError
 from src.predictor import blend_team_stats, build_team_stats, compute_league_averages, predict_match
 
@@ -107,6 +107,49 @@ def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
+_STATUS_LABELS = {
+    "IN_PLAY": "En cours",
+    "PAUSED": "Mi-temps",
+    "FINISHED": "Terminé",
+    "POSTPONED": "Reporté",
+    "SUSPENDED": "Suspendu",
+    "CANCELLED": "Annulé",
+    "AWARDED": "Décision administrative",
+}
+
+
+def _fetch_other_matches(client: FootballDataClient, matchday: int, upcoming: list[dict]) -> list[OtherMatchRow]:
+    """Matchs de la même journée déjà commencés/terminés (donc non pronostiqués).
+
+    Le bot ne pronostique que les matchs pas encore commencés (voir
+    `fetch_scheduled_matches`) : cette fonction récupère le reste de la
+    journée (en cours, terminés, reportés...) pour affichage informatif.
+    """
+    upcoming_ids = {m.get("id") for m in upcoming}
+    try:
+        all_matchday_matches = client.get_matches(matchday=matchday)
+    except FootballDataError:
+        return []
+
+    others = [m for m in all_matchday_matches if m.get("id") not in upcoming_ids]
+
+    other_rows = []
+    for match in sorted(others, key=lambda m: m.get("utcDate") or ""):
+        score = match.get("score", {}).get("fullTime", {})
+        home_goals, away_goals = score.get("home"), score.get("away")
+        score_label = f"{home_goals}-{away_goals}" if home_goals is not None and away_goals is not None else "-"
+        status_label = _STATUS_LABELS.get(match.get("status", ""), match.get("status", "?"))
+        other_rows.append(
+            OtherMatchRow(
+                home=match["homeTeam"]["name"],
+                away=match["awayTeam"]["name"],
+                status_label=status_label,
+                score=score_label,
+            )
+        )
+    return other_rows
+
+
 def run(
     matchday: int | None = None,
     use_advanced: bool = True,
@@ -116,6 +159,7 @@ def run(
     client = FootballDataClient()
     advanced_client = ApiFootballClient() if use_advanced else ApiFootballClient(api_key="")
 
+    advanced_unavailable_reason: str | None = None
     if advanced_client.is_configured:
         # Test unique en amont plutôt qu'un essai par match : évite de
         # gaspiller le quota gratuit (100 req/jour) si les statistiques
@@ -124,6 +168,7 @@ def run(
         try:
             advanced_client.find_team_id("_probe_")
         except ApiFootballError as exc:
+            advanced_unavailable_reason = str(exc)
             print(
                 f"Avertissement: statistiques avancées désactivées pour cette exécution ({exc})",
                 file=sys.stderr,
@@ -201,15 +246,21 @@ def run(
             )
         return 0
 
-    mode = "modèle avancé" if advanced_client.is_configured else "modèle de base"
+    show_advanced = advanced_client.is_configured
+    mode = "modèle avancé" if show_advanced else "modèle de base"
     title = f"Pronostics Ligue 1 — journée {target_matchday}"
-    if advanced_client.is_configured:
+    if show_advanced:
         print(f"\n{title} ({mode})\n")
+        dashboard_note = None
     else:
-        print(
-            f"\n{title} ({mode} : définissez API_FOOTBALL_TOKEN pour activer "
-            "forme/H2H/discipline/expérience)\n"
+        reason = advanced_unavailable_reason or "aucune clé API_FOOTBALL_TOKEN configurée"
+        print(f"\n{title} ({mode} : statistiques avancées indisponibles — {reason})\n")
+        dashboard_note = (
+            "Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution "
+            f"— {reason}. Le pronostic repose sur le modèle de base (buts marqués/encaissés)."
         )
+
+    other_matches = _fetch_other_matches(client, target_matchday, upcoming) if target_matchday else []
 
     rows = []
     match_rows: list[MatchRow] = []
@@ -226,20 +277,18 @@ def run(
         form_away = info.get("forme_ext", "-")
         h2h = info.get("h2h", "-")
 
-        rows.append(
-            [
-                home,
-                away,
-                f"{prediction.home_win_prob:.0%}",
-                f"{prediction.draw_prob:.0%}",
-                f"{prediction.away_win_prob:.0%}",
-                prediction.most_likely_result,
-                predicted_score,
-                form_home,
-                form_away,
-                h2h,
-            ]
-        )
+        row = [
+            home,
+            away,
+            f"{prediction.home_win_prob:.0%}",
+            f"{prediction.draw_prob:.0%}",
+            f"{prediction.away_win_prob:.0%}",
+            prediction.most_likely_result,
+            predicted_score,
+        ]
+        if show_advanced:
+            row += [form_home, form_away, h2h]
+        rows.append(row)
         match_rows.append(
             MatchRow(
                 home=home,
@@ -255,27 +304,33 @@ def run(
             )
         )
 
-    headers = [
-        "Domicile",
-        "Extérieur",
-        "1",
-        "N",
-        "2",
-        "Pronostic",
-        "Score probable",
-        "Forme dom.",
-        "Forme ext.",
-        "H2H (dom. perspective)",
-    ]
+    headers = ["Domicile", "Extérieur", "1", "N", "2", "Pronostic", "Score probable"]
+    if show_advanced:
+        headers += ["Forme dom.", "Forme ext.", "H2H (dom. perspective)"]
     table = tabulate(rows, headers=headers, tablefmt="github")
     print(table)
 
+    other_matches_note = ""
+    if other_matches:
+        other_lines = "\n".join(
+            f"- {m.home} – {m.away} : {m.status_label} ({m.score})" for m in other_matches
+        )
+        other_matches_note = f"\n\n### Autres matchs de la journée (déjà commencés/terminés)\n\n{other_lines}\n"
+
     if output:
-        markdown = f"# {title}\n\n_Généré le {_timestamp()} ({mode})._\n\n{table}\n"
+        note_block = f"\n_{dashboard_note}_\n" if dashboard_note else ""
+        markdown = f"# {title}\n\n_Généré le {_timestamp()} ({mode})._\n{note_block}\n{table}\n{other_matches_note}"
         _write_output(output, markdown)
 
     if html_output:
-        dashboard_html = render_dashboard(title, f"Généré le {_timestamp()} — {mode}", match_rows)
+        dashboard_html = render_dashboard(
+            title,
+            f"Généré le {_timestamp()} — {mode}",
+            match_rows,
+            note=dashboard_note,
+            show_advanced=show_advanced,
+            other_matches=other_matches,
+        )
         _write_output(html_output, dashboard_html)
 
     return 0
