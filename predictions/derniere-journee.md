@@ -1,21 +1,17 @@
-# Pronostics Ligue 1 — journée 5
+# Pronostics Ligue 1 — journée 6
 
-_Généré le 2026-09-20 10:13 UTC (modèle de base)._
+_Généré le 2026-09-21 11:17 UTC (modèle de base)._
 
 _Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution — Erreur API-Football sur https://v3.football.api-sports.io/teams: {'plan': 'Free plans do not have access to this season, try from 2022 to 2024.'}. Le pronostic repose sur le modèle de base (buts marqués/encaissés)._
 
-| Domicile               | Extérieur              | 1   | N   | 2   |   Pronostic | Score probable   |
+| Domicile               | Extérieur              | 1   | N   | 2   | Pronostic   | Score probable   |
 |------------------------|------------------------|-----|-----|-----|-------------|------------------|
-| AJ Auxerre             | Stade Brestois 29      | 40% | 29% | 31% |           1 | 1-1              |
-| OGC Nice               | Lille OSC              | 12% | 24% | 64% |           2 | 0-1              |
-| Olympique de Marseille | Paris Saint-Germain FC | 39% | 22% | 39% |           1 | 1-1              |
-
-
-### Autres matchs de la journée (déjà commencés/terminés)
-
-- AS Monaco FC – Racing Club de Lens : Terminé (2-1)
-- Paris FC – RC Strasbourg Alsace : Terminé (2-1)
-- Le Mans FC – FC Lorient : Terminé (2-1)
-- Toulouse FC – Le Havre AC : Terminé (3-2)
-- Angers SCO – ES Troyes AC : Terminé (2-0)
-- Olympique Lyonnais – Stade Rennais FC 1901 : Terminé (4-0)
+| Racing Club de Lens    | Olympique Lyonnais     | 46% | 28% | 26% | 1           | 1-0              |
+| Lille OSC              | Le Havre AC            | 60% | 24% | 16% | 1           | 1-0              |
+| Stade Brestois 29      | Angers SCO             | 45% | 28% | 27% | 1           | 1-0              |
+| FC Lorient             | Paris FC               | 35% | 25% | 40% | 2           | 1-1              |
+| Paris Saint-Germain FC | Le Mans FC             | 42% | 45% | 12% | N           | 0-0              |
+| AS Monaco FC           | Toulouse FC            | 50% | 22% | 27% | 1           | 1-1              |
+| OGC Nice               | RC Strasbourg Alsace   | 28% | 23% | 49% | 2           | 1-1              |
+| Stade Rennais FC 1901  | AJ Auxerre             | 72% | 16% | 12% | 1           | 2-0              |
+| ES Troyes AC           | Olympique de Marseille | 13% | 51% | 36% | N           | 0-0              |
