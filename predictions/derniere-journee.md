@@ -1,6 +1,6 @@
 # Pronostics Ligue 1 — journée 7
 
-_Généré le 2026-10-14 10:46 UTC (modèle de base)._
+_Généré le 2026-10-15 10:28 UTC (modèle de base)._
 
 _Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution — Erreur API-Football sur https://v3.football.api-sports.io/teams: {'plan': 'Free plans do not have access to this season, try from 2022 to 2024.'}. Le pronostic repose sur le modèle de base (buts marqués/encaissés)._
 
@@ -8,10 +8,10 @@ _Statistiques avancées (forme, confrontations directes) indisponibles pour cett
 |----------------------|------------------------|-----|-----|-----|-------------|------------------|
 | Le Mans FC           | Toulouse FC            | 28% | 39% | 33% | N           | 0-0              |
 | RC Strasbourg Alsace | Paris Saint-Germain FC | 26% | 25% | 49% | 2           | 1-1              |
-| ES Troyes AC         | Racing Club de Lens    | 6%  | 31% | 62% | 2           | 0-1              |
-| Lille OSC            | Stade Brestois 29      | 57% | 25% | 19% | 1           | 1-0              |
-| Angers SCO           | Olympique de Marseille | 28% | 31% | 41% | 2           | 0-1              |
+| ES Troyes AC         | Racing Club de Lens    | 8%  | 36% | 55% | 2           | 0-1              |
+| Lille OSC            | Stade Brestois 29      | 57% | 24% | 19% | 1           | 1-0              |
+| Angers SCO           | Olympique de Marseille | 33% | 32% | 35% | 2           | 0-0              |
 | FC Lorient           | AS Monaco FC           | 32% | 23% | 44% | 2           | 1-1              |
 | Paris FC             | Stade Rennais FC 1901  | 52% | 21% | 27% | 1           | 2-1              |
-| Le Havre AC          | AJ Auxerre             | 46% | 28% | 26% | 1           | 1-0              |
+| Le Havre AC          | AJ Auxerre             | 43% | 30% | 28% | 1           | 1-0              |
 | Olympique Lyonnais   | OGC Nice               | 78% | 15% | 7%  | 1           | 2-0              |
