@@ -1,6 +1,6 @@
 # Pronostics Ligue 1 — journée 9
 
-_Généré le 2026-10-29 11:53 UTC (modèle de base)._
+_Généré le 2026-10-30 11:47 UTC (modèle de base)._
 
 _Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution — Erreur API-Football sur https://v3.football.api-sports.io/teams: {'plan': 'Free plans do not have access to this season, try from 2022 to 2024.'}. Le pronostic repose sur le modèle de base (buts marqués/encaissés)._
 
