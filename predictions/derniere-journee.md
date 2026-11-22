@@ -1,21 +1,21 @@
 # Pronostics Ligue 1 — journée 11
 
-_Généré le 2026-11-21 13:50 UTC (modèle de base)._
+_Généré le 2026-11-22 13:42 UTC (modèle de base)._
 
 _Statistiques avancées (forme, confrontations directes) indisponibles pour cette exécution — Erreur API-Football sur https://v3.football.api-sports.io/teams: {'plan': 'Free plans do not have access to this season, try from 2022 to 2024.'}. Le pronostic repose sur le modèle de base (buts marqués/encaissés)._
 
-| Domicile               | Extérieur              | 1   | N   | 2   |   Pronostic | Score probable   |
-|------------------------|------------------------|-----|-----|-----|-------------|------------------|
-| OGC Nice               | Paris Saint-Germain FC | 16% | 19% | 65% |           2 | 1-2              |
-| AS Monaco FC           | AJ Auxerre             | 72% | 15% | 13% |           1 | 2-1              |
-| Racing Club de Lens    | Toulouse FC            | 51% | 23% | 26% |           1 | 1-1              |
-| Lille OSC              | Olympique Lyonnais     | 46% | 33% | 21% |           1 | 1-0              |
-| RC Strasbourg Alsace   | Stade Brestois 29      | 54% | 23% | 24% |           1 | 1-1              |
-| Paris FC               | Angers SCO             | 69% | 19% | 12% |           1 | 2-0              |
-| FC Lorient             | Stade Rennais FC 1901  | 49% | 20% | 31% |           1 | 2-1              |
-| Olympique de Marseille | Le Mans FC             | 60% | 28% | 13% |           1 | 1-0              |
+| Domicile               | Extérieur             | 1   | N   | 2   |   Pronostic | Score probable   |
+|------------------------|-----------------------|-----|-----|-----|-------------|------------------|
+| Paris FC               | Angers SCO            | 70% | 18% | 12% |           1 | 2-0              |
+| FC Lorient             | Stade Rennais FC 1901 | 50% | 20% | 30% |           1 | 2-1              |
+| Olympique de Marseille | Le Mans FC            | 61% | 27% | 12% |           1 | 1-0              |
 
 
 ### Autres matchs de la journée (déjà commencés/terminés)
 
 - ES Troyes AC – Le Havre AC : Terminé (3-1)
+- OGC Nice – Paris Saint-Germain FC : Terminé (2-3)
+- AS Monaco FC – AJ Auxerre : Terminé (1-1)
+- Racing Club de Lens – Toulouse FC : Terminé (1-1)
+- Lille OSC – Olympique Lyonnais : Terminé (0-1)
+- RC Strasbourg Alsace – Stade Brestois 29 : Terminé (0-1)
